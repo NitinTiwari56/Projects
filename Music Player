@@ -1,0 +1,524 @@
+import React, { useState, useEffect, useRef } from 'react';
+
+const MusicPlayer = () => {
+  const [songs] = useState([
+    {
+      id: 1,
+      title: "Tum Hi Ho",
+      artist: "Arijit Singh",
+      album: "Aashiqui 2",
+      duration: "4:22",
+      audioUrl: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav"
+    },
+    {
+      id: 2,
+      title: "Channa Mereya",
+      artist: "Arijit Singh",
+      album: "Ae Dil Hai Mushkil",
+      duration: "4:49",
+      audioUrl: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav"
+    },
+    {
+      id: 3,
+      title: "Raabta",
+      artist: "Arijit Singh",
+      album: "Agent Vinod",
+      duration: "4:17",
+      audioUrl: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav"
+    },
+    {
+      id: 4,
+      title: "Gerua",
+      artist: "Arijit Singh",
+      album: "Dilwale",
+      duration: "4:56",
+      audioUrl: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav"
+    },
+    {
+      id: 5,
+      title: "Pal",
+      artist: "Arijit Singh",
+      album: "Jalebi",
+      duration: "3:51",
+      audioUrl: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav"
+    },
+    {
+      id: 6,
+      title: "Hawayein",
+      artist: "Arijit Singh",
+      album: "Jab Harry Met Sejal",
+      duration: "4:32",
+      audioUrl: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav"
+    },
+    {
+      id: 7,
+      title: "Ae Watan",
+      artist: "Arijit Singh",
+      album: "Raazi",
+      duration: "3:45",
+      audioUrl: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav"
+    },
+    {
+      id: 8,
+      title: "Tera Yaar Hoon Main",
+      artist: "Arijit Singh",
+      album: "Sonu Ke Titu Ki Sweety",
+      duration: "4:28",
+      audioUrl: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav"
+    },
+    {
+      id: 9,
+      title: "Phir Bhi Tumko Chaahunga",
+      artist: "Arijit Singh",
+      album: "Half Girlfriend",
+      duration: "4:40",
+      audioUrl: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav"
+    },
+    {
+      id: 10,
+      title: "Kalank",
+      artist: "Arijit Singh",
+      album: "Kalank",
+      duration: "4:15",
+      audioUrl: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav"
+    }
+  ]);
+
+  const [currentSong, setCurrentSong] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(50);
+  const audioRef = useRef(null);
+
+  // Convert time to MM:SS format
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Audio event handlers
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
+      setDuration(audioRef.current.duration);
+    }
+  };
+
+  const handleEnded = () => {
+    handleNext();
+  };
+
+  const handleCanPlay = () => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume / 100;
+    }
+  };
+
+  // Update audio volume when volume state changes
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume / 100;
+    }
+  }, [volume]);
+
+  // Handle song change
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.load(); // Reload the new audio source
+      if (isPlaying) {
+        audioRef.current.play().catch(console.error);
+      }
+    }
+  }, [currentSong]);
+
+  const togglePlay = async () => {
+    if (!audioRef.current) return;
+
+    try {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        await audioRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    } catch (error) {
+      console.error('Error playing audio:', error);
+    }
+  };
+
+  const handleNext = () => {
+    setCurrentSong((prev) => (prev + 1) % songs.length);
+  };
+
+  const handlePrevious = () => {
+    setCurrentSong((prev) => (prev - 1 + songs.length) % songs.length);
+  };
+
+  const selectSong = (index) => {
+    setCurrentSong(index);
+    // Play will be handled by useEffect
+    setIsPlaying(true);
+  };
+
+  const volumeUp = () => {
+    setVolume(prev => Math.min(prev + 10, 100));
+  };
+
+  const volumeDown = () => {
+    setVolume(prev => Math.max(prev - 10, 0));
+  };
+
+  const handleProgressClick = (e) => {
+    if (!audioRef.current) return;
+    const progressBar = e.currentTarget;
+    const clickX = e.clientX - progressBar.getBoundingClientRect().left;
+    const width = progressBar.offsetWidth;
+    const newTime = (clickX / width) * duration;
+    audioRef.current.currentTime = newTime;
+    setCurrentTime(newTime);
+  };
+
+  const currentSongDuration = duration;
+  const progress = duration > 0 ? (currentTime / currentSongDuration) * 100 : 0;
+
+  return (
+    <div style={{ 
+      fontFamily: 'Arial, sans-serif', 
+      maxWidth: '700px', 
+      margin: '20px auto', 
+      padding: '0',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      borderRadius: '20px',
+      boxShadow: '0 15px 35px rgba(0,0,0,0.2)',
+      overflow: 'hidden'
+    }}>
+      {/* Hidden Audio Element */}
+      <audio
+        ref={audioRef}
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        onEnded={handleEnded}
+        onCanPlay={handleCanPlay}
+        preload="metadata"
+      >
+        <source src={songs[currentSong].audioUrl} type="audio/mpeg" />
+        <source src={songs[currentSong].audioUrl} type="audio/wav" />
+        Your browser does not support the audio element.
+      </audio>
+      <div style={{ 
+        background: 'rgba(255,255,255,0.1)', 
+        backdropFilter: 'blur(10px)',
+        padding: '30px',
+        textAlign: 'center'
+      }}>
+        <h1 style={{ 
+          color: '#fff', 
+          margin: '0',
+          fontSize: '2.5em',
+          fontWeight: '300',
+          textShadow: '0 2px 10px rgba(0,0,0,0.3)'
+        }}>
+          Arijit Singh
+        </h1>
+        <p style={{ 
+          color: 'rgba(255,255,255,0.8)', 
+          margin: '10px 0 0 0',
+          fontSize: '1.1em',
+          fontWeight: '300'
+        }}>
+          Music Player
+        </p>
+      </div>
+      
+      {/* Current Song Display */}
+      <div style={{ 
+        padding: '30px', 
+        background: 'rgba(255,255,255,0.15)',
+        backdropFilter: 'blur(10px)',
+        margin: '0',
+        textAlign: 'center'
+      }}>
+        <div style={{
+          width: '120px',
+          height: '120px',
+          background: 'linear-gradient(45deg, #ff6b6b, #4ecdc4)',
+          borderRadius: '15px',
+          margin: '0 auto 20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
+        }}>
+          <div style={{ color: 'white', fontSize: '3em', fontWeight: 'bold' }}>♪</div>
+        </div>
+        <h2 style={{ 
+          margin: '0 0 10px 0', 
+          color: '#fff',
+          fontSize: '1.8em',
+          fontWeight: '400'
+        }}>
+          {songs[currentSong].title}
+        </h2>
+        <p style={{ 
+          margin: '5px 0', 
+          color: 'rgba(255,255,255,0.9)',
+          fontSize: '1.1em'
+        }}>
+          {songs[currentSong].artist}
+        </p>
+        <p style={{ 
+          margin: '5px 0', 
+          color: 'rgba(255,255,255,0.7)', 
+          fontSize: '0.9em' 
+        }}>
+          {songs[currentSong].album}
+        </p>
+      </div>
+
+      {/* Progress Bar */}
+      <div style={{ margin: '0', padding: '0 30px 30px' }}>
+        <div 
+          style={{ 
+            width: '100%', 
+            height: '8px', 
+            background: 'rgba(255,255,255,0.2)', 
+            borderRadius: '4px',
+            overflow: 'hidden',
+            marginBottom: '10px',
+            cursor: 'pointer'
+          }}
+          onClick={handleProgressClick}
+        >
+          <div style={{ 
+            width: `${progress}%`, 
+            height: '100%', 
+            background: 'linear-gradient(90deg, #ff6b6b, #4ecdc4)',
+            borderRadius: '4px',
+            transition: 'width 0.1s'
+          }}></div>
+        </div>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          fontSize: '0.9em', 
+          color: 'rgba(255,255,255,0.8)'
+        }}>
+          <span>{formatTime(currentTime)}</span>
+          <span>{formatTime(duration)}</span>
+        </div>
+      </div>
+
+      {/* Controls */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        gap: '15px',
+        padding: '0 30px 20px'
+      }}>
+        <button 
+          onClick={handlePrevious}
+          style={{ 
+            padding: '12px 20px', 
+            border: 'none', 
+            background: 'rgba(255,255,255,0.2)',
+            color: 'white',
+            borderRadius: '25px',
+            cursor: 'pointer',
+            fontSize: '1em',
+            backdropFilter: 'blur(10px)',
+            transition: 'all 0.3s ease',
+            boxShadow: '0 5px 15px rgba(0,0,0,0.2)'
+          }}
+          onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.3)'}
+          onMouseOut={(e) => e.target.style.background = 'rgba(255,255,255,0.2)'}
+        >
+          ⏮ Previous
+        </button>
+        <button 
+          onClick={togglePlay}
+          style={{ 
+            padding: '15px 25px', 
+            border: 'none', 
+            background: 'linear-gradient(45deg, #ff6b6b, #4ecdc4)',
+            color: 'white',
+            borderRadius: '30px',
+            cursor: 'pointer',
+            fontSize: '1.1em',
+            fontWeight: 'bold',
+            boxShadow: '0 8px 20px rgba(0,0,0,0.3)',
+            transition: 'all 0.3s ease',
+            transform: 'scale(1)'
+          }}
+          onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
+          onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+        >
+          {isPlaying ? '⏸ Pause' : '▶ Play'}
+        </button>
+        <button 
+          onClick={handleNext}
+          style={{ 
+            padding: '12px 20px', 
+            border: 'none', 
+            background: 'rgba(255,255,255,0.2)',
+            color: 'white',
+            borderRadius: '25px',
+            cursor: 'pointer',
+            fontSize: '1em',
+            backdropFilter: 'blur(10px)',
+            transition: 'all 0.3s ease',
+            boxShadow: '0 5px 15px rgba(0,0,0,0.2)'
+          }}
+          onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.3)'}
+          onMouseOut={(e) => e.target.style.background = 'rgba(255,255,255,0.2)'}
+        >
+          Next ⏭
+        </button>
+      </div>
+
+      {/* Volume Controls */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: '15px',
+        padding: '0 30px 30px'
+      }}>
+        <button 
+          onClick={volumeDown}
+          style={{ 
+            padding: '10px 15px', 
+            border: 'none', 
+            background: 'rgba(255,255,255,0.2)',
+            color: 'white',
+            borderRadius: '20px',
+            cursor: 'pointer',
+            fontSize: '1.2em',
+            backdropFilter: 'blur(10px)',
+            transition: 'all 0.3s ease'
+          }}
+          onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.3)'}
+          onMouseOut={(e) => e.target.style.background = 'rgba(255,255,255,0.2)'}
+        >
+          🔉
+        </button>
+        
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          minWidth: '200px'
+        }}>
+          <span style={{ color: 'white', fontSize: '0.9em' }}>Volume</span>
+          <div style={{
+            flex: 1,
+            height: '6px',
+            background: 'rgba(255,255,255,0.2)',
+            borderRadius: '3px',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              width: `${volume}%`,
+              height: '100%',
+              background: 'linear-gradient(90deg, #ff6b6b, #4ecdc4)',
+              borderRadius: '3px',
+              transition: 'width 0.3s ease'
+            }}></div>
+          </div>
+          <span style={{ color: 'white', fontSize: '0.9em', minWidth: '35px' }}>{volume}%</span>
+        </div>
+
+        <button 
+          onClick={volumeUp}
+          style={{ 
+            padding: '10px 15px', 
+            border: 'none', 
+            background: 'rgba(255,255,255,0.2)',
+            color: 'white',
+            borderRadius: '20px',
+            cursor: 'pointer',
+            fontSize: '1.2em',
+            backdropFilter: 'blur(10px)',
+            transition: 'all 0.3s ease'
+          }}
+          onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.3)'}
+          onMouseOut={(e) => e.target.style.background = 'rgba(255,255,255,0.2)'}
+        >
+          🔊
+        </button>
+      </div>
+
+      {/* Song List */}
+      <div style={{ 
+        background: 'rgba(255,255,255,0.1)',
+        backdropFilter: 'blur(10px)',
+        padding: '30px'
+      }}>
+        <h3 style={{ 
+          color: 'white', 
+          marginBottom: '20px',
+          fontSize: '1.3em',
+          fontWeight: '400'
+        }}>
+          Playlist
+        </h3>
+        <div>
+          {songs.map((song, index) => (
+            <div 
+              key={song.id}
+              onClick={() => selectSong(index)}
+              style={{ 
+                padding: '15px 20px', 
+                border: 'none',
+                marginBottom: '10px',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                background: currentSong === index 
+                  ? 'linear-gradient(45deg, rgba(255,107,107,0.3), rgba(78,205,196,0.3))' 
+                  : 'rgba(255,255,255,0.1)',
+                backdropFilter: 'blur(10px)',
+                transition: 'all 0.3s ease',
+                boxShadow: currentSong === index 
+                  ? '0 5px 15px rgba(0,0,0,0.2)' 
+                  : '0 2px 8px rgba(0,0,0,0.1)'
+              }}
+              onMouseOver={(e) => {
+                if (currentSong !== index) {
+                  e.target.style.background = 'rgba(255,255,255,0.2)';
+                }
+              }}
+              onMouseOut={(e) => {
+                if (currentSong !== index) {
+                  e.target.style.background = 'rgba(255,255,255,0.1)';
+                }
+              }}
+            >
+              <div style={{ 
+                fontWeight: '500', 
+                color: 'white',
+                fontSize: '1.1em',
+                marginBottom: '5px'
+              }}>
+                {song.title}
+              </div>
+              <div style={{ 
+                fontSize: '0.9em', 
+                color: 'rgba(255,255,255,0.7)'
+              }}>
+                {song.album} • {song.duration}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default MusicPlayer;
